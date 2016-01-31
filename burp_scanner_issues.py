@@ -14,7 +14,7 @@ class BaseCSPIssue(IScanIssue):
     """ Just a base class with some helpful docstrings """
 
     def __init__(self, httpService, url, httpMessages, severity, confidence,
-                 directive=None, payload=None):
+                 directive=None):
         """
         Setters for all the getters, `directive' and `payload' are optional
         """
@@ -24,7 +24,6 @@ class BaseCSPIssue(IScanIssue):
         self._severity = severity
         self._confidence = confidence
         self._directive = directive
-        self._payload = payload
 
     def getUrl(self):
         """
@@ -235,6 +234,20 @@ class DeprecatedHeader(BaseCSPIssue):
 
 
 class KnownCSPBypass(BaseCSPIssue):
+
+    # pylint: disable=W0231
+    def __init__(self, httpService, url, httpMessages, severity, confidence,
+                 directive=None, bypass=None):
+        """
+        Burp uses old style classes so we can't use super()
+        """
+        self._httpService = httpService
+        self._url = url
+        self._httpMessages = httpMessages
+        self._severity = severity
+        self._confidence = confidence
+        self._directive = directive
+        self._bypass = bypass
 
     def getIssueName(self):
         return "Known CSP Bypass for %s" % self._directive

@@ -34,27 +34,25 @@ class ContentSecurityPolicyScan(IScannerCheck):
                    "x-webkit-csp"]
 
     def __init__(self, callbacks):
-        """ Initialize instance variables """
+        """
+        WARNING: Only one IScannerCheck object is ever created, because of this
+        you effectively cannot use Python's `self' have to pass around any
+        variables as method args if you want access to them, fml.
+        """
         self._helpers = callbacks.getHelpers()
-        self._burpHttpReqResp = None
-        self.issues = []
-        self.response = None
 
-    def _getUrl(self):
-        return self._helpers.analyzeRequest(self._burpHttpReqResp).getUrl()
+    def _getUrl(self, burpHttpReqResp):
+        return self._helpers.analyzeRequest(burpHttpReqResp).getUrl()
 
-    def _getHttpService(self):
-        return self._burpHttpReqResp.getHttpService()
-
-    def doPassiveScan(self, httpMessage):
+    def doPassiveScan(self, burpHttpReqResp):
         """
         This is a callback method for Burp, its called for each HTTP req/resp.
         Returns a list of IScanIssue(s)
         """
-        if len(httpMessage.getResponse()):
-            self._burpHttpReqResp = httpMessage
-            self.proccessHttpResponse(httpMessage.getResponse())
-        return self.issues
+        if len(burpHttpReqResp.getResponse()):
+            return self.proccessHttpResponse(burpHttpReqResp)
+        else:
+            return []
 
     def consolidateDuplicateIssues(self, existingIssue, newIssue):
         """
@@ -70,146 +68,160 @@ class ContentSecurityPolicyScan(IScannerCheck):
         else:
             return 0
 
-    def proccessHttpResponse(self, byteResponse):
+    def proccessHttpResponse(self, burpHttpReqResp):
         """ Processes only the HTTP repsonses with a CSP header """
+        byteResponse = burpHttpReqResp.getResponse()
         httpSocket = HttpDummySocket(bytearray(byteResponse))
-        self.response = HTTPResponse(httpSocket)
-        self.response.begin()
-        for header in self.response.getheaders():
+        response = HTTPResponse(httpSocket)
+        response.begin()
+        issues = []
+        for header in response.getheaders():
             if header[0].lower() in self.CSP_HEADERS:
-                self.parseContentSecurityPolicy(header)
+                findings = self.parseContentSecurityPolicy(header, burpHttpReqResp)
+                issues.extend(findings)
+        return issues
 
-    def parseContentSecurityPolicy(self, cspHeader):
+    def parseContentSecurityPolicy(self, cspHeader, burpHttpReqResp):
         """ Parses the CSP response header and searches for issues """
         csp = ContentSecurityPolicy(cspHeader[0], cspHeader[1])
-        self.deprecatedHeaderCheck(csp)
-        self.unsafeContentSourceCheck(csp)
-        self.wildcardContentSourceCheck(csp)
-        self.insecureContentSourceCheck(csp)
-        self.missingDirectiveCheck(csp)
-        self.weakDefaultSourceCheck(csp)
-        self.knownBypassCheck(csp)
+        issues = []
+        issues.extend(self.deprecatedHeaderCheck(csp, burpHttpReqResp))
+        issues.extend(self.unsafeContentSourceCheck(csp, burpHttpReqResp))
+        issues.extend(self.wildcardContentSourceCheck(csp, burpHttpReqResp))
+        issues.extend(self.insecureContentSourceCheck(csp, burpHttpReqResp))
+        issues.extend(self.missingDirectiveCheck(csp, burpHttpReqResp))
+        issues.extend(self.weakDefaultSourceCheck(csp, burpHttpReqResp))
+        issues.extend(self.knownBypassCheck(csp, burpHttpReqResp))
+        return issues
 
-    def deprecatedHeaderCheck(self, csp):
+    def deprecatedHeaderCheck(self, csp, burpHttpReqResp):
         """
         Checks for the use of a deprecated header such as `X-WebKit-CSP'
         """
+        issues = []
         if csp.is_deprecated_header():
             deprecatedHeader = DeprecatedHeader(
-                httpService=self._getHttpService(),
-                url=self._getUrl(),
-                httpMessages=self._burpHttpReqResp,
+                httpService=burpHttpReqResp.getHttpService(),
+                url=self._getUrl(burpHttpReqResp),
+                httpMessages=burpHttpReqResp,
                 severity="Medium",
                 confidence="Certain")
-            self.issues.append(deprecatedHeader)
+            issues.append(deprecatedHeader)
+        return issues
 
-    def unsafeContentSourceCheck(self, csp):
+    def unsafeContentSourceCheck(self, csp, burpHttpReqResp):
         """ Checks the current CSP header for unsafe content sources """
+        issues = []
         for directive in [SCRIPT_SRC, STYLE_SRC]:
             if UNSAFE_EVAL in csp[directive] or UNSAFE_INLINE in csp[directive]:
                 unsafeContent = UnsafeContentSource(
-                    httpService=self._getHttpService(),
-                    url=self._getUrl(),
-                    httpMessages=self._burpHttpReqResp,
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
                     severity="High",
                     confidence="Certain",
                     directive=directive)
-                self.issues.append(unsafeContent)
+                issues.append(unsafeContent)
+        return issues
 
-    def wildcardContentSourceCheck(self, csp):
+    def wildcardContentSourceCheck(self, csp, burpHttpReqResp):
         """ Check content sources for wildcards '*' """
+        issues = []
         for directive, contentSoruces in csp.iteritems():
             if contentSoruces is None:
                 continue  # Skip unspecified directives in NO_FALLBACK
             if any("*" in src for src in contentSoruces):
                 wildcardContent = WildcardContentSource(
-                    httpService=self._getHttpService(),
-                    url=self._getUrl(),
-                    httpMessages=self._burpHttpReqResp,
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
                     severity="Medium",
                     confidence="Certain",
                     directive=directive)
-                self.issues.append(wildcardContent)
+                issues.append(wildcardContent)
+        return issues
 
-    def insecureContentSourceCheck(self, csp):
+    def insecureContentSourceCheck(self, csp, burpHttpReqResp):
         """ Check content sources for insecure `http:' sources """
-        pass
+        issues = []
+        return issues
 
-    def missingDirectiveCheck(self, csp):
+    def missingDirectiveCheck(self, csp, burpHttpReqResp):
         """
         Check for missing directives that do not inherit from `default-src'
         """
+        issues = []
         for directive in ContentSecurityPolicy.NO_FALLBACK:
             if directive not in csp:
                 missingDirective = MissingDirective(
-                    httpService=self._getHttpService(),
-                    url=self._getUrl(),
-                    httpMessages=self._burpHttpReqResp,
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
                     severity="Medium",
                     confidence="Certain",
                     directive=directive)
-                self.issues.append(missingDirective)
+                issues.append(missingDirective)
+        return issues
 
-    def weakDefaultSourceCheck(self, csp):
+    def weakDefaultSourceCheck(self, csp, burpHttpReqResp):
         """
         Any `default-src' that is not 'none'/'self'/https: is considered weak
         """
+        issues = []
         weak = False
         for contentSource in csp[DEFAULT_SRC]:
             if contentSource not in [SELF, NONE, HTTPS]:
                 weak = True
         if weak:
             weakDefault = WeakDefaultSource(
-                httpService=self._getHttpService(),
-                url=self._getUrl(),
-                httpMessages=self._burpHttpReqResp,
+                httpService=burpHttpReqResp.getHttpService(),
+                url=self._getUrl(burpHttpReqResp),
+                httpMessages=burpHttpReqResp,
                 severity="Medium",
                 confidence="Certain")
-            self.issues.append(weakDefault)
+            issues.append(weakDefault)
+        return issues
 
-    def knownBypassCheck(self, csp):
+    def knownBypassCheck(self, csp, burpHttpReqResp):
         """
         Parses the CSP for known bypasses, we mainly just look for arbitrary
         `script-src' bypasses.
         """
+        issues = []
         for directive, knownBypasses in CSP_KNOWN_BYPASSES.iteritems():
-            self._bypassCheckDirective(csp, directive, knownBypasses)
+            bypasses = self._bypassCheckDirective(csp, directive, knownBypasses)
+            for bypass in bypasses:
+                bypassIssue = self._createKnownBypassIssue(directive, bypass,
+                                                           burpHttpReqResp)
+                issues.append(bypassIssue)
+        return issues
 
-    def _createKnownBypassIssue(self, directive, bypassesFound, payload):
+    def _createKnownBypassIssue(self, directive, bypass, burpHttpReqResp):
+        """ Creates the KnownCSPBypass issue object """
         knownBypass = KnownCSPBypass(
-            httpService=self._getHttpService(),
-            url=self._getUrl(),
-            httpMessages=self._burpHttpReqResp,
+            httpService=burpHttpReqResp.getHttpService(),
+            url=self._getUrl(burpHttpReqResp),
+            httpMessages=burpHttpReqResp,
             severity="Medium",
             confidence="Certain",
             directive=directive,
-            payload=payload)
-        self.issues.append(knownBypass)
+            bypass=bypass)
+        return knownBypass
 
     def _bypassCheckDirective(self, csp, directive, knownBypasses):
         """
         Check an individual directive (e.g. `script-src') to see if it contains
         any domains that host known CSP bypasses.
         """
-        bypassDomains = [bypass[0] for bypass in knownBypasses]
+        bypasses = []
         for src in csp[directive]:
             if src.startswith("'") or src in ["http:", "https:"]:
                 continue  # We only care about domains
-            foundBypasses = self._bypassMatchDomainsToSrc(src, bypassDomains)
-            for bypass in foundBypasses:
-                payload = knownBypasses[knownBypasses.index(bypass)][1]
-                self._createKnownBypassIssue(directive, bypass, payload)
+            for domain, payload in knownBypasses:
+                if csp_match_domains(src, domain):
+                    bypasses.append((domain, payload,))
+        return bypasses
 
-    def _bypassMatchDomainsToSrc(self, src, bypassDomains):
-        """
-        This method matches a `src' domain to any domain in `bypassDomains'
-        If `src' matches any domain in `bypassDomains' we have a valid bypass.
-        """
-        matches = []
-        for bypassDomain in [bypass.split(".") for bypass in bypassDomains]:
-            if csp_match_domains(src, bypassDomain):
-                matches.append(bypassDomain)
-        return matches
 
 
 
