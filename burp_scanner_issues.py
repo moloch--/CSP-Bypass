@@ -13,13 +13,15 @@ class BaseCSPIssue(IScanIssue):
 
     """ Just a base class with some helpful docstrings """
 
-    def __init__(self, httpService, url, httpMessages, severity, confidence):
+    def __init__(self, httpService, url, httpMessages, severity, confidence,
+                 directive=None):
         """ Setters for all the getters """
         self._httpService = httpService
         self._url = url
         self._httpMessages = httpMessages
         self._severity = severity
         self._confidence = confidence
+        self._directive = directive
 
     def getUrl(self):
         """
@@ -120,10 +122,10 @@ class BaseCSPIssue(IScanIssue):
         return self._httpService
 
 
-class WildCardDirective(BaseCSPIssue):
+class WildcardContentSource(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Wild Card Directive"
+        return "Wild Card Source: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"
@@ -138,10 +140,10 @@ class WildCardDirective(BaseCSPIssue):
         return "Remediation details"
 
 
-class UnsafeContentDirective(BaseCSPIssue):
+class UnsafeContentSource(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Unsafe Content Sources"
+        return "Unsafe Content Source: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"
@@ -159,7 +161,7 @@ class UnsafeContentDirective(BaseCSPIssue):
 class InsecureContentDirective(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Insecure Content Sources"
+        return "Insecure Content Sources: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"
@@ -177,7 +179,7 @@ class InsecureContentDirective(BaseCSPIssue):
 class MissingDirective(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Missing CSP Directive"
+        return "Missing CSP Directive: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"

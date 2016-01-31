@@ -83,7 +83,10 @@ class ContentSecurityPolicyScan(IScannerCheck):
         """ Parses the CSP response header and searches for issues """
         csp = ContentSecurityPolicy(cspHeader[0], cspHeader[1])
         self.deprecatedHeaderCheck(csp)
-        self.unsafeDirectiveCheck(csp)
+        self.unsafeContentSourceCheck(csp)
+        self.wildcardContentSourceCheck(csp)
+        self.insecureContentSourceCheck(csp)
+        self.missingDirectiveCheck(csp)
 
     def deprecatedHeaderCheck(self, csp):
         """
@@ -98,17 +101,52 @@ class ContentSecurityPolicyScan(IScannerCheck):
                 confidence="Certain")
             self.issues.append(deprecatedHeader)
 
-    def unsafeDirectiveCheck(self, csp):
+    def unsafeContentSourceCheck(self, csp):
         """ Checks the current CSP header for unsafe content sources """
         for directive in [SCRIPT_SRC, STYLE_SRC]:
             if UNSAFE_EVAL in csp[directive] or UNSAFE_INLINE in csp[directive]:
-                unsafeContent = UnsafeContentDirective(
+                unsafeContent = UnsafeContentSource(
                     httpService=self._getHttpService(),
                     url=self._getUrl(),
                     httpMessages=self._burpHttpReqResp,
                     severity="High",
-                    confidence="Certain")
+                    confidence="Certain",
+                    directive=directive)
                 self.issues.append(unsafeContent)
+
+    def wildcardContentSourceCheck(self, csp):
+        """ Check content sources for wildcards '*' """
+        for directive, contentSoruces in csp.iteritems():
+            if contentSoruces is None:
+                continue  # Skip unspecified directives in NO_FALLBACK
+            if any("*" in src for src in contentSoruces):
+                wildcardContent = WildcardContentSource(
+                    httpService=self._getHttpService(),
+                    url=self._getUrl(),
+                    httpMessages=self._burpHttpReqResp,
+                    severity="Medium",
+                    confidence="Certain",
+                    directive=directive)
+                self.issues.append(wildcardContent)
+
+    def insecureContentSourceCheck(self, csp):
+        """ Check content sources for insecure `http:' sources """
+        pass
+
+    def missingDirectiveCheck(self, csp):
+        """
+        Check for missing directives that do not inherit from `default-src'
+        """
+        for directive in ContentSecurityPolicy.NO_FALLBACK:
+            if directive not in csp:
+                missingDirective = MissingDirective(
+                    httpService=self._getHttpService(),
+                    url=self._getUrl(),
+                    httpMessages=self._burpHttpReqResp,
+                    severity="Medium",
+                    confidence="Certain",
+                    directive=directive)
+                self.issues.append(missingDirective)
 
 
 class BurpExtender(IBurpExtender):
