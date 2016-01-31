@@ -15,24 +15,6 @@ from httplib import HTTPResponse
 from StringIO import StringIO
 
 
-class ContentSecurityPolicy(object):
-
-    """ A simple Content-Security-Policy parser """
-
-    def __init__(self, header):
-        self.raw_header = header
-        self._parse_header()
-
-    def _parse_header(self):
-        pass
-
-    def __getitem__(self, key):
-        pass
-
-    def __iter__(self):
-        pass
-
-
 class HttpDummySocket(object):
 
     """ A dummy socket object so we can use httplib to parse the string """
@@ -49,7 +31,9 @@ class BurpExtender(IBurpExtender, IHttpListener, IExtensionStateListener):
     """ Burp extension object """
 
     NAME = "CSP Bypass"
-    CSP_HEADERS = ["content-security-policy", "x-content-security-policy"]
+    CSP_HEADERS = ["content-security-policy",
+                   "x-content-security-policy",
+                   "x-webkit-csp"]
 
     def log(self, message):
         """ Helper method for logging messages """
@@ -82,7 +66,8 @@ class BurpExtender(IBurpExtender, IHttpListener, IExtensionStateListener):
                 self.parseContentSecurityPolicy(header)
 
     def parseContentSecurityPolicy(self, cspHeader):
-        self.log("Found CSP: %s" % cspHeader[1])
+        csp = ContentSecurityPolicy(cspHeader[0], cspHeader[1])
+
 
     def extensionUnloaded(self):
         """ Cleanup when the extension is unloaded """
