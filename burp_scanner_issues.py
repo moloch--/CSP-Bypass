@@ -125,7 +125,7 @@ class BaseCSPIssue(IScanIssue):
 class WildcardContentSource(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Wild Card Source: %s" % self._directive
+        return "Wildcard Content Source: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"
@@ -161,7 +161,7 @@ class UnsafeContentSource(BaseCSPIssue):
 class InsecureContentDirective(BaseCSPIssue):
 
     def getIssueName(self):
-        return "Insecure Content Sources: %s" % self._directive
+        return "Insecure Content Source: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"

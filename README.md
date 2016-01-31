@@ -3,12 +3,13 @@ CSP Bypass
 
 This Burp plugin is designed to passively scan and parse CSP headers and automatically detect possibly bypasses and weaknesses.
 
+![CSP Bypass](/images/csp_bypass.png?raw=true)
 
 ## Installation
 
 #### Jython Setup
  1. Download the latest [Jython 2.7.x](http://www.jython.org/) .jar file
- 1. In Burp select `Extender` and then the `Options` tab, under _Python Environment_ heading click `Select File ...` and browse to the Jython .jar file
+ 1. In Burp select `Extender` and then the `Options` tab, under the _Python Environment_ heading click `Select File ...` and browse to the Jython .jar file
 
 #### CSP Bypass Plugin Setup
  1. Execute the `build-plugin.sh` script, you should see a `csp-bypass-plugin.py` file appear
