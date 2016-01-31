@@ -65,8 +65,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         existing issue only, <code>0</code> to report both issues, and
         <code>1</code> to report the new issue only.
         """
-        print dir(existingIssue)
-        if existingIssue.getUrl() == newIssue.getUrl():
+        if existingIssue.getIssueName() == newIssue.getIssueName() and existingIssue.getUrl() == newIssue.getUrl():
             return -1
         else:
             return 0
@@ -87,20 +86,29 @@ class ContentSecurityPolicyScan(IScannerCheck):
         self.unsafeDirectiveCheck(csp)
 
     def deprecatedHeaderCheck(self, csp):
+        """
+        Checks for the use of a deprecated header such as `X-WebKit-CSP'
+        """
         if csp.is_deprecated_header():
-            DeprecatedHeader()
+            deprecatedHeader = DeprecatedHeader(
+                httpService=self._getHttpService(),
+                url=self._getUrl(),
+                httpMessages=self._burpHttpReqResp,
+                severity="Medium",
+                confidence="Certain")
+            self.issues.append(deprecatedHeader)
 
     def unsafeDirectiveCheck(self, csp):
-        """ Scans the current CSP header for unsafe content sources """
+        """ Checks the current CSP header for unsafe content sources """
         for directive in [SCRIPT_SRC, STYLE_SRC]:
             if UNSAFE_EVAL in csp[directive] or UNSAFE_INLINE in csp[directive]:
-                unsafe_content = UnsafeContentDirective(
+                unsafeContent = UnsafeContentDirective(
                     httpService=self._getHttpService(),
                     url=self._getUrl(),
                     httpMessages=self._burpHttpReqResp,
                     severity="High",
                     confidence="Certain")
-                self.issues.append(unsafe_content)
+                self.issues.append(unsafeContent)
 
 
 class BurpExtender(IBurpExtender):

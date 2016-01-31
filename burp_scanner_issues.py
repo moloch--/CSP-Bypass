@@ -3,6 +3,8 @@
 
 Scanner issues reported by the plugin.
 """
+# pylint: disable=E0602,C0103,W0621
+
 
 from burp import IScanIssue
 
