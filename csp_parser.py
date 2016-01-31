@@ -57,8 +57,9 @@ class ContentSecurityPolicy(object):
 
     def _parse_header(self):
         for policy in self.header_value.split(";"):
+            if not len(policy): continue
             directive, sources = self._unpack_policy(*policy.strip().split(" "))
-            self._content_policies[directive].extend(sources)
+            self[directive] = sources
 
     def _unpack_policy(self, directive, *content_sources):
         """ Used to unpack the directive name and directives """
@@ -73,12 +74,17 @@ class ContentSecurityPolicy(object):
 
     def __setitem__(self, key, value):
         if key not in self.CONTENT_TYPES:
-            raise ValueError("Unknown directive %s" % key)
-        self._content_policies[key].append(value)
+            raise ValueError("Unknown directive '%s'" % key)
+        if isinstance(value, list):
+            self._content_policies[key].extend(value)
+        elif isinstance(value, basestring):
+            self._content_policies[key].append(value)
+        else:
+            raise ValueError("Expected list or basestring")
 
     def __getitem__(self, key):
         if key not in self.CONTENT_TYPES:
-            raise ValueError("Unknown directive %s" % key)
+            raise ValueError("Unknown directive '%s'" % key)
         if key in self._content_policies:
             return self._content_policies[key]
         elif key not in self.NO_FALLBACK:
