@@ -13,18 +13,18 @@ class BaseCSPIssue(IScanIssue):
 
     def __init__(self, httpService, url, httpMessages, severity, confidence):
         """ Setters for all the getters """
-        self.HttpService = httpService
-        self.Url = url
-        self.HttpMessages = httpMessages
-        self.Severity = severity
-        self.Confidence = confidence
+        self._httpService = httpService
+        self._url = url
+        self._httpMessages = httpMessages
+        self._severity = severity
+        self._confidence = confidence
 
     def getUrl(self):
         """
         This method returns the URL for which the issue was generated.
         @return The URL for which the issue was generated.
         """
-        pass
+        return self._url
 
     def getIssueName(self):
         """
@@ -39,7 +39,7 @@ class BaseCSPIssue(IScanIssue):
         Scanner help documentation for a listing of all the issue types.
         @return A numeric identifier of the issue type.
         """
-        raise NotImplementedError()
+        return 0  # https://portswigger.net/burp/help/scanner_issuetypes.html
 
     def getSeverity(self):
         """
@@ -47,7 +47,7 @@ class BaseCSPIssue(IScanIssue):
         @return The issue severity level. Expected values are "High", "Medium",
         "Low", "Information" or "False positive".
         """
-        pass
+        return self._severity
 
     def getConfidence(self):
         """
@@ -55,7 +55,7 @@ class BaseCSPIssue(IScanIssue):
         @return The issue confidence level. Expected values are "Certain", "Firm"
         or "Tentative".
         """
-        pass
+        return self._confidence
 
     def getIssueBackground(self):
         """
@@ -100,19 +100,22 @@ class BaseCSPIssue(IScanIssue):
         This method returns the HTTP messages on the basis of which the issue was
         generated.
         @return The HTTP messages on the basis of which the issue was generated.
-        <b>Note:</b> The items in this array should be instances of
+        Note: The items in this array should be instances of
         <code>IHttpRequestResponseWithMarkers</code> if applicable, so that
         details of the relevant portions of the request and response messages are
         available.
         """
-        pass
+        if isinstance(self._httpMessages, list):
+            return self._httpMessages
+        else:
+            return [self._httpMessages]
 
     def getHttpService(self):
         """
         This method returns the HTTP service for which the issue was generated.
         @return The HTTP service for which the issue was generated.
         """
-        pass
+        return self._httpService
 
 
 class WildCardDirective(BaseCSPIssue):
@@ -120,11 +123,35 @@ class WildCardDirective(BaseCSPIssue):
     def getIssueName(self):
         return "Wild Card Directive"
 
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
+
 
 class UnsafeContentDirective(BaseCSPIssue):
 
     def getIssueName(self):
         return "Unsafe Content Sources"
+
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
 
 
 class InsecureContentDirective(BaseCSPIssue):
@@ -132,8 +159,50 @@ class InsecureContentDirective(BaseCSPIssue):
     def getIssueName(self):
         return "Insecure Content Sources"
 
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
+
 
 class MissingDirective(BaseCSPIssue):
 
     def getIssueName(self):
         return "Missing CSP Directive"
+
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
+
+
+class DeprecatedHeader(BaseCSPIssue):
+
+    def getIssueName(self):
+        return "Deprecated Header"
+
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
