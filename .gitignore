@@ -1,0 +1,51 @@
+*.py[co]
+
+# Data files
+*.csv
+*.zip
+*.cfg
+
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# SSL Stuff
+*.crt
+*.key
+
+# SSH Keys
+id_*
+*.pub
+
+# XML exports
+*.xml
+
+# SQLite3 databases
+*.db
+
+# Screen files
+*.0
+
+# Log files
+*.log
+
+# Installer logs
+pip-log.txt
+
+# Eclipse
+.project
+.pydevproject
+
+# PyCharm
+.idea/*
+
+# OSX
+.DS_Store
