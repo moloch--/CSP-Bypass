@@ -34,11 +34,14 @@ UNSAFE_EVAL = "'unsafe-eval'"
 
 class ContentSecurityPolicy(object):
 
-    """ A simple Content-Security-Policy parser """
+    """
+    A simple Content-Security-Policy object, it resembles a dictionary but has
+    logic to return `default-src' when approiate, etc.
+    """
 
     CONTENT_TYPES = [
         DEFAULT_SRC, SCRIPT_SRC, BASE_URI, CHILD_SRC, FRAME_SRC,
-        CONNECT_SRC, FONT_SRC, FORM_ACTION,FRAME_ANCESTORS, IMG_SRC,
+        CONNECT_SRC, FONT_SRC, FORM_ACTION, FRAME_ANCESTORS, IMG_SRC,
         MEDIA_SRC, OBJECT_SRC, PLUGIN_TYPES, REPORT_URI, STYLE_SRC,
         SANDBOX, UPGRADE_INSECURE_REQUESTS]
 
@@ -55,7 +58,7 @@ class ContentSecurityPolicy(object):
     def _parse_header(self):
         for policy in self.header_value.split(";"):
             directive, sources = self._unpack_policy(*policy.strip().split(" "))
-            self[directive].extend(sources)
+            self._content_policies[directive].extend(sources)
 
     def _unpack_policy(self, directive, *content_sources):
         """ Used to unpack the directive name and directives """
