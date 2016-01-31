@@ -1,7 +1,7 @@
 CSP Bypass
 ============
 
-This Burp plugin is designed to passively scan and parse CSP headers and automatically detect known bypasses and other weaknesses.
+This is a Burp plugin that is designed to passively scan for CSP headers that contain known bypasses as well as other potential weaknesses.
 
 ![CSP Bypass](/images/csp_bypass.png?raw=true)
 
