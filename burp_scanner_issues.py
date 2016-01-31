@@ -14,14 +14,17 @@ class BaseCSPIssue(IScanIssue):
     """ Just a base class with some helpful docstrings """
 
     def __init__(self, httpService, url, httpMessages, severity, confidence,
-                 directive=None):
-        """ Setters for all the getters """
+                 directive=None, payload=None):
+        """
+        Setters for all the getters, `directive' and `payload' are optional
+        """
         self._httpService = httpService
         self._url = url
         self._httpMessages = httpMessages
         self._severity = severity
         self._confidence = confidence
         self._directive = directive
+        self._payload = payload
 
     def getUrl(self):
         """
@@ -194,10 +197,47 @@ class MissingDirective(BaseCSPIssue):
         return "Remediation details"
 
 
+class WeakDefaultSource(BaseCSPIssue):
+
+    def getIssueName(self):
+        return "Weak default-src Directive"
+
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
+
+
+
 class DeprecatedHeader(BaseCSPIssue):
 
     def getIssueName(self):
         return "Deprecated Header"
+
+    def getIssueBackground(self):
+        return "Issue background"
+
+    def getRemediationBackground(self):
+        return "Remediation background"
+
+    def getIssueDetail(self):
+        return "Issue details"
+
+    def getRemediationDetail(self):
+        return "Remediation details"
+
+
+class KnownCSPBypass(BaseCSPIssue):
+
+    def getIssueName(self):
+        return "Known CSP Bypass for %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"

@@ -46,5 +46,28 @@ class TestContentSecurityPolicy(unittest.TestCase):
             ContentSecurityPolicy(*CSP_TEST_INVALID_TYPES)
 
 
+class TestCSPMatchDomains(unittest.TestCase):
+
+    def test_simple_domain_match(self):
+        self.assertTrue(csp_match_domains("foo.bar.com", "foo.bar.com"))
+
+    def test_wildcard_main(self):
+        self.assertTrue(csp_match_domains("*.bar.com", "foo.bar.com"))
+
+    def test_simple_mismatch(self):
+        self.assertFalse(csp_match_domains("foobar.com", "foobar.net"))
+        self.assertFalse(csp_match_domains("foobar.com", "foo.bar.com"))
+
+    def test_scheme_match(self):
+        self.assertTrue(csp_match_domains("ws://*.bar.com", "foo.bar.com"))
+
+    def test_scheme_mismatch(self):
+        self.assertFalse(csp_match_domains("ws://*.foo.com", "foo.bar.com"))
+
+    def test_realworld_match(self):
+        self.assertTrue(csp_match_domains("*.googleapis.com", "ajax.googleapis.com"))
+        self.assertTrue(csp_match_domains("ajax.googleapis.com", "ajax.googleapis.com"))
+
+
 if __name__ == '__main__':
     unittest.main()

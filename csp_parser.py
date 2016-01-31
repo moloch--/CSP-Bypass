@@ -5,6 +5,8 @@ A basic Content Security Policy parser.
 """
 
 from collections import defaultdict
+from urlparse import urlparse
+
 
 ### Constants
 BASE_URI = "base-uri"
@@ -30,6 +32,26 @@ SELF = "'self'"
 NONE = "'none'"
 UNSAFE_INLINE = "'unsafe-inline'"
 UNSAFE_EVAL = "'unsafe-eval'"
+HTTP = "http:"
+HTTPS = "https:"
+
+
+def csp_match_domains(content_src, domain):
+    """ Is `domain' allowed by `srcDomain' """
+    # Isolate just the domain incase there is a scheme/etc.
+    if urlparse(content_src).netloc != '':
+        content_src = urlparse(content_src).netloc
+
+    srcParts = content_src.split(".")[::-1]  # Reverse the domains
+    domainParts = domain.split(".")[::-1]
+    for index, srcPart in enumerate(srcParts):
+        if srcPart == "*":
+            return True
+        if srcPart == domainParts[index]:
+            continue
+        else:
+            return False
+    return len(srcParts) == len(domainParts)
 
 
 class ContentSecurityPolicy(object):

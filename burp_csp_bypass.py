@@ -35,9 +35,9 @@ class ContentSecurityPolicyScan(IScannerCheck):
 
     def __init__(self, callbacks):
         """ Initialize instance variables """
-        self.issues = []
         self._helpers = callbacks.getHelpers()
         self._burpHttpReqResp = None
+        self.issues = []
         self.response = None
 
     def _getUrl(self):
@@ -87,6 +87,8 @@ class ContentSecurityPolicyScan(IScannerCheck):
         self.wildcardContentSourceCheck(csp)
         self.insecureContentSourceCheck(csp)
         self.missingDirectiveCheck(csp)
+        self.weakDefaultSourceCheck(csp)
+        self.knownBypassCheck(csp)
 
     def deprecatedHeaderCheck(self, csp):
         """
@@ -148,6 +150,68 @@ class ContentSecurityPolicyScan(IScannerCheck):
                     directive=directive)
                 self.issues.append(missingDirective)
 
+    def weakDefaultSourceCheck(self, csp):
+        """
+        Any `default-src' that is not 'none'/'self'/https: is considered weak
+        """
+        weak = False
+        for contentSource in csp[DEFAULT_SRC]:
+            if contentSource not in [SELF, NONE, HTTPS]:
+                weak = True
+        if weak:
+            weakDefault = WeakDefaultSource(
+                httpService=self._getHttpService(),
+                url=self._getUrl(),
+                httpMessages=self._burpHttpReqResp,
+                severity="Medium",
+                confidence="Certain")
+            self.issues.append(weakDefault)
+
+    def knownBypassCheck(self, csp):
+        """
+        Parses the CSP for known bypasses, we mainly just look for arbitrary
+        `script-src' bypasses.
+        """
+        for directive, knownBypasses in CSP_KNOWN_BYPASSES.iteritems():
+            self._bypassCheckDirective(csp, directive, knownBypasses)
+
+    def _createKnownBypassIssue(self, directive, bypassesFound, payload):
+        knownBypass = KnownCSPBypass(
+            httpService=self._getHttpService(),
+            url=self._getUrl(),
+            httpMessages=self._burpHttpReqResp,
+            severity="Medium",
+            confidence="Certain",
+            directive=directive,
+            payload=payload)
+        self.issues.append(knownBypass)
+
+    def _bypassCheckDirective(self, csp, directive, knownBypasses):
+        """
+        Check an individual directive (e.g. `script-src') to see if it contains
+        any domains that host known CSP bypasses.
+        """
+        bypassDomains = [bypass[0] for bypass in knownBypasses]
+        for src in csp[directive]:
+            if src.startswith("'") or src in ["http:", "https:"]:
+                continue  # We only care about domains
+            foundBypasses = self._bypassMatchDomainsToSrc(src, bypassDomains)
+            for bypass in foundBypasses:
+                payload = knownBypasses[knownBypasses.index(bypass)][1]
+                self._createKnownBypassIssue(directive, bypass, payload)
+
+    def _bypassMatchDomainsToSrc(self, src, bypassDomains):
+        """
+        This method matches a `src' domain to any domain in `bypassDomains'
+        If `src' matches any domain in `bypassDomains' we have a valid bypass.
+        """
+        matches = []
+        for bypassDomain in [bypass.split(".") for bypass in bypassDomains]:
+            if csp_match_domains(src, bypassDomain):
+                matches.append(bypassDomain)
+        return matches
+
+
 
 class BurpExtender(IBurpExtender):
 
@@ -159,7 +223,3 @@ class BurpExtender(IBurpExtender):
         """ Entrypoint and setup """
         callbacks.setExtensionName(self.NAME)
         callbacks.registerScannerCheck(ContentSecurityPolicyScan(callbacks))
-
-    def extensionUnloaded(self):
-        """ Cleanup when the extension is unloaded """
-        print "CSP Bypass extension was unloaded"
