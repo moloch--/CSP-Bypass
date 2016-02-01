@@ -10,6 +10,7 @@ possibly weaknesses and bypasses in the policy.
 from burp import IBurpExtender
 from burp import IScannerCheck
 
+from urlparse import urlparse
 from httplib import HTTPResponse
 from StringIO import StringIO
 
@@ -59,11 +60,12 @@ class ContentSecurityPolicyScan(IScannerCheck):
         This is a callback method for Burp, and is used to cleanup duplicate
         findings.
         @return An indication of which issue(s) should be reported in the main
-        Scanner results. The method should return <code>-1</code> to report the
-        existing issue only, <code>0</code> to report both issues, and
-        <code>1</code> to report the new issue only.
+        Scanner results.
+        <code>-1</code> to report the existing issue only
+        <code>0</code> to report both issues
+        <code>1</code> to report the new issue only
         """
-        if existingIssue.getIssueName() == newIssue.getIssueName() and existingIssue.getUrl() == newIssue.getUrl():
+        if existingIssue.getIssueName() == newIssue.getIssueName():
             return -1
         else:
             return 0
@@ -142,8 +144,21 @@ class ContentSecurityPolicyScan(IScannerCheck):
         return issues
 
     def insecureContentSourceCheck(self, csp, burpHttpReqResp):
-        """ Check content sources for insecure `http:' sources """
+        """ Check content sources that allow insecure network protocols """
         issues = []
+        for directive, sources in csp.iteritems():
+            if sources is None:
+                continue
+            for src in sources:
+                if src == HTTP or urlparse(src).scheme in ["http", "ws"]:
+                    insecureContent = InsecureContentDirective(
+                        httpService=burpHttpReqResp.getHttpService(),
+                        url=self._getUrl(burpHttpReqResp),
+                        httpMessages=burpHttpReqResp,
+                        severity="High",
+                        confidence="Certain",
+                        directive=directive)
+                    issues.append(insecureContent)
         return issues
 
     def missingDirectiveCheck(self, csp, burpHttpReqResp):
@@ -183,26 +198,22 @@ class ContentSecurityPolicyScan(IScannerCheck):
         return issues
 
     def knownBypassCheck(self, csp, burpHttpReqResp):
-        """
-        Parses the CSP for known bypasses, we mainly just look for arbitrary
-        `script-src' bypasses.
-        """
+        """ Parses the CSP for known bypasses """
         issues = []
         for directive, knownBypasses in CSP_KNOWN_BYPASSES.iteritems():
             bypasses = self._bypassCheckDirective(csp, directive, knownBypasses)
             for bypass in bypasses:
-                bypassIssue = self._createKnownBypassIssue(directive, bypass,
-                                                           burpHttpReqResp)
+                bypassIssue = self._createBypassIssue(directive, bypass, burpHttpReqResp)
                 issues.append(bypassIssue)
         return issues
 
-    def _createKnownBypassIssue(self, directive, bypass, burpHttpReqResp):
+    def _createBypassIssue(self, directive, bypass, burpHttpReqResp):
         """ Creates the KnownCSPBypass issue object """
         knownBypass = KnownCSPBypass(
             httpService=burpHttpReqResp.getHttpService(),
             url=self._getUrl(burpHttpReqResp),
             httpMessages=burpHttpReqResp,
-            severity="Medium",
+            severity="High",
             confidence="Certain",
             directive=directive,
             bypass=bypass)
@@ -215,7 +226,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         """
         bypasses = []
         for src in csp[directive]:
-            if src.startswith("'") or src in ["http:", "https:"]:
+            if src.startswith("'") or src in [HTTP, HTTPS]:
                 continue  # We only care about domains
             for domain, payload in knownBypasses:
                 if csp_match_domains(src, domain):

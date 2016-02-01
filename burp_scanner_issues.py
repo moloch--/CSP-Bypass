@@ -250,7 +250,7 @@ class KnownCSPBypass(BaseCSPIssue):
         self._bypass = bypass
 
     def getIssueName(self):
-        return "Known CSP Bypass for %s" % self._directive
+        return "Known CSP Bypass: %s" % self._directive
 
     def getIssueBackground(self):
         return "Issue background"
@@ -259,7 +259,13 @@ class KnownCSPBypass(BaseCSPIssue):
         return "Remediation background"
 
     def getIssueDetail(self):
-        return "Issue details"
+        return """
+A known bypass exists in the %s directive for the domain "%s"
+
+Example Payload: %s
+""" % (self._directive, self._bypass[0], self._bypass[1])
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return """
+Remove the content source \"%s\" domain from your %s CSP directive.
+""" % (self._bypass[0], self._directive)
