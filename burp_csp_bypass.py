@@ -129,10 +129,10 @@ class ContentSecurityPolicyScan(IScannerCheck):
     def wildcardContentSourceCheck(self, csp, burpHttpReqResp):
         """ Check content sources for wildcards '*' """
         issues = []
-        for directive, contentSoruces in csp.iteritems():
-            if contentSoruces is None:
+        for directive, sources in csp.iteritems():
+            if sources is None:
                 continue  # Skip unspecified directives in NO_FALLBACK
-            if any("*" in src for src in contentSoruces):
+            if any(src == "*" for src in sources):
                 wildcardContent = WildcardContentSource(
                     httpService=burpHttpReqResp.getHttpService(),
                     url=self._getUrl(burpHttpReqResp),
