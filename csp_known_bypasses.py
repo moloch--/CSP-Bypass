@@ -1,5 +1,8 @@
+"""
+Common domains that contain known CSP bypasses
+"""
+# pylint: disable=C0301
 
-# Common domains that contain known CSP bypasses
 
 CSP_KNOWN_BYPASSES = {
     "script-src": [

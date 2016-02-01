@@ -17,3 +17,7 @@ This is a Burp plugin that is designed to passively scan for CSP headers that co
  1. Click `Add` in the window that appears, select `Python` from the `Extension Type` dropdown menu
  1. Click `Select File ...` next to `Extension File` and select the generated `csp-bypass-plugin.py` file
  1. Click `Next` and you're done!
+
+## Report Bypasses in Common Domains
+
+To add bypasses simply edit [csp_known_bypasses.py](https://github.com/moloch--/CSP-Bypass/blob/master/csp_known_bypasses.py) with a domain, and an example payload or description of the bypass. Be sure to use the full domain, the plugin will match wildcards (e.g. if a policy allows `*.googleapis.com` it will match against `ajax.googleapis.com`). Submit a pull request to get your bypass in the main repository!

@@ -2,7 +2,7 @@
 """
 @author: moloch
 
-Unit tests for the CSP parser, the parser is written in "pure" Python so  we
+Unit tests for the CSP parser, the parser is written in "pure" Python so we
 don't need Jython to run the unit tests.
 """
 

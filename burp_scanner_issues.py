@@ -3,7 +3,7 @@
 
 Scanner issues reported by the plugin.
 """
-# pylint: disable=E0602,C0103,W0621
+# pylint: disable=E0602,C0103,W0621,R0201
 
 
 from burp import IScanIssue
@@ -11,12 +11,16 @@ from burp import IScanIssue
 
 class BaseCSPIssue(IScanIssue):
 
-    """ Just a base class with some helpful docstrings """
+    """
+    Just a base class with some helpful docstrings and a slightly modified
+    constructor so we can track what directive we're reporting about.
+    """
 
+    # pylint: disable=R0913
     def __init__(self, httpService, url, httpMessages, severity, confidence,
                  directive=None):
         """
-        Setters for all the getters, `directive' and `payload' are optional
+        Setters for all the getters, `directive' is optional
         """
         self._httpService = httpService
         self._url = url
@@ -126,6 +130,10 @@ class BaseCSPIssue(IScanIssue):
 
 class WildcardContentSource(BaseCSPIssue):
 
+    """
+    Wildcard content sources. Note: this does not flag wildcard subdomains
+    """
+
     def getIssueName(self):
         return "Wildcard Content Source: %s" % self._directive
 
@@ -143,6 +151,8 @@ class WildcardContentSource(BaseCSPIssue):
 
 
 class UnsafeContentSource(BaseCSPIssue):
+
+    """ Any directive that allows unsafe content (e.g. 'unsafe-eval') """
 
     def getIssueName(self):
         return "Unsafe Content Source: %s" % self._directive
@@ -162,6 +172,10 @@ class UnsafeContentSource(BaseCSPIssue):
 
 class InsecureContentDirective(BaseCSPIssue):
 
+    """
+    Any directive that allows insecure network protocols (e.g. ws: or http:)
+    """
+
     def getIssueName(self):
         return "Insecure Content Source: %s" % self._directive
 
@@ -180,6 +194,11 @@ class InsecureContentDirective(BaseCSPIssue):
 
 class MissingDirective(BaseCSPIssue):
 
+    """
+    Directives that 'fail open', that is to say they are not restricted by the
+    CSP and do not fallback to default-src.
+    """
+
     def getIssueName(self):
         return "Missing CSP Directive: %s" % self._directive
 
@@ -197,6 +216,8 @@ class MissingDirective(BaseCSPIssue):
 
 
 class WeakDefaultSource(BaseCSPIssue):
+
+    """ Any default-src that is not 'none' 'self' or 'https:' """
 
     def getIssueName(self):
         return "Weak default-src Directive"
@@ -217,6 +238,8 @@ class WeakDefaultSource(BaseCSPIssue):
 
 class DeprecatedHeader(BaseCSPIssue):
 
+    """ Flags use of X-WebKit-CSP and X-Content-Security-Policy """
+
     def getIssueName(self):
         return "Deprecated Header"
 
@@ -235,7 +258,9 @@ class DeprecatedHeader(BaseCSPIssue):
 
 class KnownCSPBypass(BaseCSPIssue):
 
-    # pylint: disable=W0231
+    """ Reports a known bypass in a domain whitelisted by a CSP """
+
+    # pylint: disable=W0231,R0913
     def __init__(self, httpService, url, httpMessages, severity, confidence,
                  directive=None, bypass=None):
         """
@@ -260,12 +285,11 @@ class KnownCSPBypass(BaseCSPIssue):
 
     def getIssueDetail(self):
         return """
-A known bypass exists in the %s directive for the domain "%s"
-
-Example Payload: %s
+A known bypass exists in the '%s' directive for the domain '%s'.
+%s
 """ % (self._directive, self._bypass[0], self._bypass[1])
 
     def getRemediationDetail(self):
         return """
-Remove the content source \"%s\" domain from your %s CSP directive.
+Remove the content source '%s' domain from your '%s' CSP directive.
 """ % (self._bypass[0], self._directive)

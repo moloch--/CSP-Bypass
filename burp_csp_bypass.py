@@ -4,7 +4,7 @@
 This is a Burp plugin to parse Content-Security-Policy headers and detect
 possibly weaknesses and bypasses in the policy.
 """
-# pylint: disable=E0602,C0103,W0621
+# pylint: disable=E0602,C0103,W0621,R0903,R0201
 
 
 from burp import IBurpExtender
@@ -23,6 +23,7 @@ class HttpDummySocket(object):
         self._file = StringIO(byteResponse)
 
     def makefile(self, *args, **kwargs):
+        """ API compatability with `socket' """
         return self._file
 
 
@@ -43,6 +44,9 @@ class ContentSecurityPolicyScan(IScannerCheck):
         self._helpers = callbacks.getHelpers()
 
     def _getUrl(self, burpHttpReqResp):
+        """
+        Uses the Burp helper APIs to get the URL from the HttpReqResp object
+        """
         return self._helpers.analyzeRequest(burpHttpReqResp).getUrl()
 
     def doPassiveScan(self, burpHttpReqResp):

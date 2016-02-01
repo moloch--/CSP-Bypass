@@ -37,7 +37,7 @@ HTTPS = "https:"
 
 
 def csp_match_domains(content_src, domain):
-    """ Is `domain' allowed by `srcDomain' """
+    """ Is `domain' allowed by `content_src' """
     # Isolate just the domain incase there is a scheme/etc.
     if urlparse(content_src).netloc != '':
         content_src = urlparse(content_src).netloc
@@ -78,8 +78,10 @@ class ContentSecurityPolicy(object):
         self._parse_header()
 
     def _parse_header(self):
+        """ Splits the header on ';' then subsequently on whitespace """
         for policy in self.header_value.split(";"):
-            if not len(policy): continue
+            if not len(policy):
+                continue  # Skip blanks
             directive, sources = self._unpack_policy(*policy.strip().split(" "))
             self[directive] = sources
 
@@ -105,6 +107,9 @@ class ContentSecurityPolicy(object):
             raise ValueError("Expected list or basestring")
 
     def __getitem__(self, key):
+        """
+        Get the policy or return default-src if the policy isn't in NO_FALLBACK 
+        """
         if key not in self.CONTENT_TYPES:
             raise ValueError("Unknown directive '%s'" % key)
         if key in self._content_policies:
