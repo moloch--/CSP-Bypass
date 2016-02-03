@@ -8,7 +8,6 @@ A basic Content Security Policy parser.
 from collections import defaultdict
 from urlparse import urlparse
 
-
 ### Constants
 BASE_URI = "base-uri"
 FORM_ACTION = "form-action"

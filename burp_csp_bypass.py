@@ -7,12 +7,11 @@ possibly weaknesses and bypasses in the policy.
 # pylint: disable=E0602,C0103,W0621,R0903,R0201
 
 
-from burp import IBurpExtender
-from burp import IScannerCheck
-
-from urlparse import urlparse
 from httplib import HTTPResponse
 from StringIO import StringIO
+from urlparse import urlparse
+
+from burp import IBurpExtender, IScannerCheck
 
 
 class HttpDummySocket(object):

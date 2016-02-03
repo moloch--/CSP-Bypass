@@ -10,7 +10,6 @@ import unittest
 
 from csp_parser import *
 
-
 # Constants
 CSP_HEADER_NAME = "Content-Security-Policy"
 

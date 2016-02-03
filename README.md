@@ -8,7 +8,7 @@ This is a Burp plugin that is designed to passively scan for CSP headers that co
 ## Installation
 
 #### Jython Setup
- 1. Download the latest [Jython 2.7.x](http://www.jython.org/) .jar file
+ 1. Download the latest standalone [Jython 2.7.x](http://www.jython.org/downloads.html) .jar file
  1. In Burp select `Extender` and then the `Options` tab, under the _Python Environment_ heading click `Select File ...` and browse to the Jython .jar file
 
 #### CSP Bypass Plugin Setup
