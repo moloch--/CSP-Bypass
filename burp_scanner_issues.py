@@ -138,7 +138,7 @@ class WildcardContentSource(BaseCSPIssue):
         return "Wildcard Content Source: %s" % self._directive
 
     def getIssueBackground(self):
-        return "Issue background"
+        return "Background description goes here!"
 
     def getRemediationBackground(self):
         return "Remediation background"
@@ -196,7 +196,7 @@ class MissingDirective(BaseCSPIssue):
 
     """
     Directives that 'fail open', that is to say they are not restricted by the
-    CSP and do not fallback to default-src.
+    CSP and do not fallback to `default-src'.
     """
 
     def getIssueName(self):
@@ -217,7 +217,7 @@ class MissingDirective(BaseCSPIssue):
 
 class WeakDefaultSource(BaseCSPIssue):
 
-    """ Any default-src that is not 'none' 'self' or 'https:' """
+    """ Any `default-src' that is not 'none' 'self' or 'https:' """
 
     def getIssueName(self):
         return "Weak default-src Directive"
