@@ -31,10 +31,6 @@ class ContentSecurityPolicyScan(IScannerCheck):
 
     """ Implements the actual passive scan """
 
-    CSP_HEADERS = ["content-security-policy",
-                   "x-content-security-policy",
-                   "x-webkit-csp"]
-
     def __init__(self, callbacks):
         """
         WARNING: Only one IScannerCheck object is ever created, because of this
@@ -82,7 +78,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         response.begin()
         issues = []
         for header in response.getheaders():
-            if header[0].lower() in self.CSP_HEADERS:
+            if header[0].lower() in ContentSecurityPolicy.HEADERS:
                 findings = self.parseContentSecurityPolicy(header, burpHttpReqResp)
                 issues.extend(findings)
         return issues

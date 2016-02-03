@@ -3,6 +3,7 @@
 
 A basic Content Security Policy parser.
 """
+# pylint: disable=C0103,C0111,R0201
 
 from collections import defaultdict
 from urlparse import urlparse
@@ -61,6 +62,10 @@ class ContentSecurityPolicy(object):
     logic to return `default-src' when approiate, etc.
     """
 
+    HEADERS = ["content-security-policy",
+               "x-content-security-policy",
+               "x-webkit-csp"]
+
     CONTENT_TYPES = [
         DEFAULT_SRC, SCRIPT_SRC, BASE_URI, CHILD_SRC, FRAME_SRC,
         CONNECT_SRC, FONT_SRC, FORM_ACTION, FRAME_ANCESTORS, IMG_SRC,
@@ -72,14 +77,37 @@ class ContentSecurityPolicy(object):
                    REPORT_URI, SANDBOX]
 
     def __init__(self, header_name, header_value):
-        self.header_name = header_name.lower()
-        self.header_value = header_value.lower()
         self._content_policies = defaultdict(list)
+        self._header_name = None
+        self._header_value = None
+        self.header_name = header_name
+        self.header_value = header_value
+
+    @property
+    def header_name(self):
+        return self._header_name
+
+    @header_name.setter
+    def header_name(self, value):
+        """ Setter for the header name """
+        if value.lower() not in self.HEADERS:
+            raise ValueError("Unknown header name: '%s'" % value)
+        else:
+            self._header_name = value.lower()
+
+    @property
+    def header_value(self):
+        return self._header_value
+
+    @header_value.setter
+    def header_value(self, value):
+        """ Sets the header value and parses it """
+        self._header_value = value
         self._parse_header()
 
     def _parse_header(self):
         """ Splits the header on ';' then subsequently on whitespace """
-        for policy in self.header_value.split(";"):
+        for policy in self._header_value.split(";"):
             if not len(policy):
                 continue  # Skip blanks
             directive, sources = self._unpack_policy(*policy.strip().split(" "))
@@ -90,9 +118,11 @@ class ContentSecurityPolicy(object):
         return directive, [src.strip() for src in content_sources]
 
     def is_deprecated_header(self):
+        """ Check for X-WebKit-CSP or X-Content-Security-Policy """
         return self.header_name.startswith('x')
 
     def iteritems(self):
+        """ Similar to a dictionary, iterates tuples of key/value pairs """
         for key in self.CONTENT_TYPES:
             yield (key, self[key],)
 
@@ -108,7 +138,7 @@ class ContentSecurityPolicy(object):
 
     def __getitem__(self, key):
         """
-        Get the policy or return default-src if the policy isn't in NO_FALLBACK 
+        Get the policy or return default-src if the policy isn't in NO_FALLBACK
         """
         if key not in self.CONTENT_TYPES:
             raise ValueError("Unknown directive '%s'" % key)
