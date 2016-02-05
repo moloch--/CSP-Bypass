@@ -73,7 +73,12 @@ class BaseCSPIssue(IScanIssue):
         @return A background description for this type of issue, or
         <code>null</code> if none applies.
         """
-        raise NotImplementedError()
+        return """
+Content security policy (CSP) is an HTML5 standard primarily designed to mitigate
+the issue of cross-site scripting (XSS) and other content injection vulnerabilities
+within web applications. Weak content security policies stem from overly permissive
+or ineffective content source directives.
+"""
 
     def getRemediationBackground(self):
         """
@@ -83,7 +88,12 @@ class BaseCSPIssue(IScanIssue):
         issue, or
         <code>null</code> if none applies.
         """
-        raise NotImplementedError()
+        return """While non-trivial to implement, modern browser headers such
+as Content-Security-Policy (CSP) can provide extremely robust protection against
+XSS and related content injection issues. To fix weak policies enforce as much
+restriction on the content sources as possible, strive to disable unsafe, insecure,
+and wildcard sources, and where possible limit 3rd party domains.
+"""
 
     def getIssueDetail(self):
         """
@@ -137,17 +147,30 @@ class WildcardContentSource(BaseCSPIssue):
     def getIssueName(self):
         return "Wildcard Content Source: %s" % self._directive
 
-    def getIssueBackground(self):
-        return "Background description goes here!"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "The %s CSP directive does not enforce any restrictions on what \
+        origins content can be loaded from." % self._directive
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Remove all wildcards from the content security policy."
+
+
+class WildcardSubdomainContentSource(BaseCSPIssue):
+
+    """
+    Wildcard subdomain content sources.
+    """
+
+    def getIssueName(self):
+        return "Wildcard Subdomain Content Source: %s" % self._directive
+
+    def getIssueDetail(self):
+        return "Wildcard subdomains expose additional attack surface, since an \
+        attacker can potentially leverage a vulnerability in any subdomain to \
+        to bypass the CSP."
+
+    def getRemediationDetail(self):
+        return "Avoid use of wildcard subdomains in CSP directives."
 
 
 class UnsafeContentSource(BaseCSPIssue):
@@ -157,17 +180,11 @@ class UnsafeContentSource(BaseCSPIssue):
     def getIssueName(self):
         return "Unsafe Content Source: %s" % self._directive
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "This content security policy allows for unsafe content sources"
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Refactor the website to remove inline JavaScript and CSS"
 
 
 class InsecureContentDirective(BaseCSPIssue):
@@ -179,17 +196,13 @@ class InsecureContentDirective(BaseCSPIssue):
     def getIssueName(self):
         return "Insecure Content Source: %s" % self._directive
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "The content directive %s allows resources to be loaded over \
+        insecure network protocols." % self._directive
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Restrict content sources to only use secure protocols such as \
+        https:// and wss://."
 
 
 class MissingDirective(BaseCSPIssue):
@@ -202,17 +215,13 @@ class MissingDirective(BaseCSPIssue):
     def getIssueName(self):
         return "Missing CSP Directive: %s" % self._directive
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "The %s content directive does not fallback to default-src, if \
+        no content sources are explicitly set it will default to completely \
+        open." % self._directive
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Explicitly set a %s directive in your content policy." % self._directive
 
 
 class WeakDefaultSource(BaseCSPIssue):
@@ -222,38 +231,45 @@ class WeakDefaultSource(BaseCSPIssue):
     def getIssueName(self):
         return "Weak default-src Directive"
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "The default content source should be as restrictive as possible \
+        the content policy for this website does not restrict the default source \
+        to either 'none' 'self' (and 'https:')."
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Set the default-src to either 'self' or preferrably 'none'. If \
+        the default source is set to 'self' also consider adding 'https:' to \
+        ensure resources are loaded over a secure network connection."
 
 
 
 class DeprecatedHeader(BaseCSPIssue):
 
-    """ Flags use of X-WebKit-CSP and X-Content-Security-Policy """
+    """ Flags use of `X-WebKit-CSP' and `X-Content-Security-Policy' """
 
     def getIssueName(self):
         return "Deprecated Header"
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return "Issue details"
+        return "The site uses a deprecated CSP header"
 
     def getRemediationDetail(self):
-        return "Remediation details"
+        return "Change the server response header to `Content-Security-Policy'"
+
+
+class NonceContentSource(BaseCSPIssue):
+
+    """ Alerts the user that a `nonce-' source was found """
+
+    def getIssueName(self):
+        return "Nonce Content Source"
+
+    def getIssueDetail(self):
+        return "This site uses nonces to secure inline content"
+
+    def getRemediationDetail(self):
+        return "Refactor the website to disallow all inline content, and remove \
+        nonce content sources from the CSP."
 
 
 class KnownCSPBypass(BaseCSPIssue):
@@ -277,19 +293,10 @@ class KnownCSPBypass(BaseCSPIssue):
     def getIssueName(self):
         return "Known CSP Bypass: %s" % self._directive
 
-    def getIssueBackground(self):
-        return "Issue background"
-
-    def getRemediationBackground(self):
-        return "Remediation background"
-
     def getIssueDetail(self):
-        return """
-A known bypass exists in the '%s' directive for the domain '%s'.
-%s
-""" % (self._directive, self._bypass[0], self._bypass[1])
+        return "A known bypass exists in the '%s' directive for the domain \
+        '%s'. %s" % (self._directive, self._bypass[0], self._bypass[1])
 
     def getRemediationDetail(self):
-        return """
-Remove the content source '%s' domain from your '%s' CSP directive.
-""" % (self._bypass[0], self._directive)
+        return "Remove the content source '%s' domain from your '%s' CSP \
+        directive." % (self._bypass[0], self._directive)

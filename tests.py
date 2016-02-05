@@ -5,6 +5,8 @@
 Unit tests for the CSP parser, the parser is written in "pure" Python so we
 don't need Jython to run the unit tests.
 """
+# pylint: disable=C0111,C0301
+
 
 import unittest
 
@@ -20,7 +22,7 @@ CSP_TEST_PARSER_1 = (
 
 CSP_TEST_PARSER_2 = (
     CSP_HEADER_NAME,
-    "default-src 'self' https:; connect-src 'self' https: http:; font-src 'self' https:; frame-src *; img-src 'self' https: http: data:; media-src 'self' https:; object-src 'self' https:; script-src 'self' https: 'unsafe-eval' 'unsafe-inline' http:; style-src 'self' https: 'unsafe-inline' http:; report-uri /tracking/csp;")  # pylint: disable=C0301
+    "default-src 'self' https:; connect-src 'self' https: http:; font-src 'self' https:; frame-src *; img-src 'self' https: http: data:; media-src 'self' https:; object-src 'self' https:; script-src 'self' https: 'unsafe-eval' 'unsafe-inline' http:; style-src 'self' https: 'unsafe-inline' http:; report-uri /tracking/csp;")
 
 CSP_TEST_INVALID_TYPES = (
     CSP_HEADER_NAME,

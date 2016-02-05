@@ -6,11 +6,12 @@ Common domains that contain known CSP bypasses
 
 CSP_KNOWN_BYPASSES = {
     "script-src": [
-        # (DOMAIN, PAYLOAD,)
-        ("ajax.googleapis.com", '"><script src=//ajax.googleapis.com/ajax/services/feed/find?v=1.0%26callback=alert%26context=1337></script>'),
+        # (DOMAIN, DESCRIPTION/EXAMPLE,)
+        ("ajax.googleapis.com", '''
+Additional information is available here:  https://github.com/cure53/XSSChallengeWiki/wiki/H5SC-Minichallenge-3:-%22Sh*t,-it%27s-CSP!%22
 
-    ],
-    "object-src": [
-
+Example Payload:
+"><script src=//ajax.googleapis.com/ajax/services/feed/find?v=1.0%26callback=alert%26context=1337></script>
+'''),
     ]
 }

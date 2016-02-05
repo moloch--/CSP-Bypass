@@ -126,7 +126,10 @@ class ContentSecurityPolicyScan(IScannerCheck):
         return issues
 
     def wildcardContentSourceCheck(self, csp, burpHttpReqResp):
-        """ Check content sources for wildcards '*' """
+        """
+        Check content sources for wildcards '*' note that wilcard subdomains
+        are checked by `wildcardSubdomainContentSourceCheck'
+        """
         issues = []
         for directive, sources in csp.iteritems():
             if sources is None:
@@ -140,6 +143,45 @@ class ContentSecurityPolicyScan(IScannerCheck):
                     confidence="Certain",
                     directive=directive)
                 issues.append(wildcardContent)
+        return issues
+
+    def wildcardSubdomainContentSourceCheck(self, csp, burpHttpReqResp):
+        """ Check content sources for wildcards subdomains '*.foo.com' """
+        issues = []
+        for directive, sources in csp.iteritems():
+            if sources is None:
+                continue
+            # This check is a little hacky but should work well
+            # the shortest subdomain string should be like *.a.bc
+            if any("*" in src and 5 <= len(src) for src in sources):
+                wilcardSubdomain = WildcardSubdomainContentSource(
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
+                    severity="Low",
+                    confidence="Certain",
+                    directive=directive)
+                issues.append(wilcardSubdomain)
+        return issues
+
+    def nonceSourceCheck(self, csp, burpHttpReqResp):
+        """
+        Check content sources for wildcards '*' note that wilcard subdomains
+        are checked by `wildcardSubdomainContentSourceCheck'
+        """
+        issues = []
+        for directive, sources in csp.iteritems():
+            if sources is None:
+                continue  # Skip unspecified directives in NO_FALLBACK
+            if any(src.startswith("'nonce-") for src in sources):
+                nonceContent = NonceContentSource(
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
+                    severity="Informational",
+                    confidence="Certain",
+                    directive=directive)
+                issues.append(nonceContent)
         return issues
 
     def insecureContentSourceCheck(self, csp, burpHttpReqResp):
@@ -186,6 +228,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         for contentSource in csp[DEFAULT_SRC]:
             if contentSource not in [SELF, NONE, HTTPS]:
                 weak = True
+                break
         if weak:
             weakDefault = WeakDefaultSource(
                 httpService=burpHttpReqResp.getHttpService(),
@@ -197,7 +240,10 @@ class ContentSecurityPolicyScan(IScannerCheck):
         return issues
 
     def knownBypassCheck(self, csp, burpHttpReqResp):
-        """ Parses the CSP for known bypasses """
+        """
+        Parses the CSP for known bypasses, this check is a little more
+        complicated, and calls into other subroutines.
+        """
         issues = []
         for directive, knownBypasses in CSP_KNOWN_BYPASSES.iteritems():
             bypasses = self._bypassCheckDirective(csp, directive, knownBypasses)
@@ -225,8 +271,11 @@ class ContentSecurityPolicyScan(IScannerCheck):
         """
         bypasses = []
         for src in csp[directive]:
-            if src.startswith("'") or src in [HTTP, HTTPS]:
+            if src.startswith("'") or src in [HTTP, HTTPS, DATA, BLOB]:
                 continue  # We only care about domains
+
+            # Iterate over all bypasses and check if `src' allows loading
+            # content from `domain' if so, we have a bypass!
             for domain, payload in knownBypasses:
                 if csp_match_domains(src, domain):
                     bypasses.append((domain, payload,))
@@ -245,3 +294,4 @@ class BurpExtender(IBurpExtender):
         """ Entrypoint and setup """
         callbacks.setExtensionName(self.NAME)
         callbacks.registerScannerCheck(ContentSecurityPolicyScan(callbacks))
+        print '[*] CSP-Bypass extension loaded successfully.'

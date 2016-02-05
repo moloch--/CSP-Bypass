@@ -16,6 +16,8 @@ PLUGIN_TYPES = "plugin-types"
 REPORT_URI = "report-uri"
 SANDBOX = "sandbox"
 UPGRADE_INSECURE_REQUESTS = "upgrade-insecure-requests"
+REFLECTIVE_XSS = "reflected-xss"
+REFERRER = "referrer"
 
 DEFAULT_SRC = "default-src"
 SCRIPT_SRC = "script-src"
@@ -27,6 +29,7 @@ IMG_SRC = "img-src"
 MEDIA_SRC = "media-src"
 OBJECT_SRC = "object-src"
 STYLE_SRC = "style-src"
+MANIFEST_SRC = "manifest-src"
 
 SELF = "'self'"
 NONE = "'none'"
@@ -34,24 +37,28 @@ UNSAFE_INLINE = "'unsafe-inline'"
 UNSAFE_EVAL = "'unsafe-eval'"
 HTTP = "http:"
 HTTPS = "https:"
+BLOB = "blob:"
+DATA = "data:"
+FILESYSTEM = "filesystem:"
+MEDIASTREAM = "mediastream:"
 
 
 def csp_match_domains(content_src, domain):
-    """ Is `domain' allowed by `content_src' """
+    """ Does a `content_src' allow a `domain' """
     # Isolate just the domain incase there is a scheme/etc.
     if urlparse(content_src).netloc != '':
         content_src = urlparse(content_src).netloc
 
-    srcParts = content_src.split(".")[::-1]  # Reverse the domains
-    domainParts = domain.split(".")[::-1]
-    for index, srcPart in enumerate(srcParts):
-        if srcPart == "*":
+    src_parts = content_src.split(".")[::-1]  # Reverse the domains
+    domain_parts = domain.split(".")[::-1]
+    for index, src_part in enumerate(src_parts):
+        if src_part == "*":
             return True
-        if srcPart == domainParts[index]:
+        if src_part == domain_parts[index]:
             continue
         else:
             return False
-    return len(srcParts) == len(domainParts)
+    return len(src_parts) == len(domain_parts)
 
 
 class ContentSecurityPolicy(object):
@@ -65,15 +72,17 @@ class ContentSecurityPolicy(object):
                "x-content-security-policy",
                "x-webkit-csp"]
 
-    CONTENT_TYPES = [
-        DEFAULT_SRC, SCRIPT_SRC, BASE_URI, CHILD_SRC, FRAME_SRC,
-        CONNECT_SRC, FONT_SRC, FORM_ACTION, FRAME_ANCESTORS, IMG_SRC,
-        MEDIA_SRC, OBJECT_SRC, PLUGIN_TYPES, REPORT_URI, STYLE_SRC,
-        SANDBOX, UPGRADE_INSECURE_REQUESTS]
+    # All content directives
+    CONTENT_DIRECTIVES = [
+        DEFAULT_SRC, SCRIPT_SRC, CHILD_SRC, FRAME_SRC, CONNECT_SRC, FONT_SRC,
+        IMG_SRC, MEDIA_SRC, OBJECT_SRC, STYLE_SRC, MANIFEST_SRC,
+
+        BASE_URI, FORM_ACTION, FRAME_ANCESTORS, PLUGIN_TYPES,
+        REPORT_URI, SANDBOX, REFLECTIVE_XSS, REFERRER]
 
     # These directives do not fallback to default-src
     NO_FALLBACK = [BASE_URI, FORM_ACTION, FRAME_ANCESTORS, PLUGIN_TYPES,
-                   REPORT_URI, SANDBOX]
+                   REPORT_URI, SANDBOX, REFLECTIVE_XSS, REFERRER]
 
     def __init__(self, header_name, header_value):
         self._content_policies = defaultdict(list)
@@ -122,11 +131,11 @@ class ContentSecurityPolicy(object):
 
     def iteritems(self):
         """ Similar to a dictionary, iterates tuples of key/value pairs """
-        for key in self.CONTENT_TYPES:
+        for key in self.CONTENT_DIRECTIVES:
             yield (key, self[key],)
 
     def __setitem__(self, key, value):
-        if key not in self.CONTENT_TYPES:
+        if key not in self.CONTENT_DIRECTIVES:
             raise ValueError("Unknown directive '%s'" % key)
         if isinstance(value, list):
             self._content_policies[key].extend(value)
@@ -139,7 +148,7 @@ class ContentSecurityPolicy(object):
         """
         Get the policy or return default-src if the policy isn't in NO_FALLBACK
         """
-        if key not in self.CONTENT_TYPES:
+        if key not in self.CONTENT_DIRECTIVES:
             raise ValueError("Unknown directive '%s'" % key)
         if key in self._content_policies:
             return self._content_policies[key]
@@ -147,11 +156,11 @@ class ContentSecurityPolicy(object):
             return self._content_policies[DEFAULT_SRC]
 
     def __contains__(self, item):
-        if item not in self.NO_FALLBACK and item in self.CONTENT_TYPES:
+        if item not in self.NO_FALLBACK and item in self.CONTENT_DIRECTIVES:
             return True
         else:
             return item in self._content_policies
 
     def __iter__(self):
-        for key in self.CONTENT_TYPES:
-            yield self[key]
+        for key in self.CONTENT_DIRECTIVES:
+            yield key
