@@ -234,19 +234,16 @@ class ContentSecurityPolicyScan(IScannerCheck):
         Any `default-src' that is not 'none'/'self'/https: is considered weak
         """
         issues = []
-        weak = False
         for contentSource in csp[DEFAULT_SRC]:
             if contentSource not in [SELF, NONE, HTTPS]:
-                weak = True
+                weakDefault = WeakDefaultSource(
+                    httpService=burpHttpReqResp.getHttpService(),
+                    url=self._getUrl(burpHttpReqResp),
+                    httpMessages=burpHttpReqResp,
+                    severity="Medium",
+                    confidence="Certain")
+                issues.append(weakDefault)
                 break
-        if weak:
-            weakDefault = WeakDefaultSource(
-                httpService=burpHttpReqResp.getHttpService(),
-                url=self._getUrl(burpHttpReqResp),
-                httpMessages=burpHttpReqResp,
-                severity="Medium",
-                confidence="Certain")
-            issues.append(weakDefault)
         return issues
 
     def knownBypassCheck(self, csp, burpHttpReqResp):
