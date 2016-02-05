@@ -46,6 +46,8 @@ MEDIASTREAM = "mediastream:"
 def csp_match_domains(content_src, domain):
     """ Does a `content_src' allow a `domain' """
     # Isolate just the domain incase there is a scheme/etc.
+    content_src = content_src.lower()
+    domain = domain.lower()
     if urlparse(content_src).netloc != '':
         content_src = urlparse(content_src).netloc
 
@@ -110,7 +112,7 @@ class ContentSecurityPolicy(object):
     @header_value.setter
     def header_value(self, value):
         """ Sets the header value and parses it """
-        self._header_value = value
+        self._header_value = value.lower()
         self._parse_header()
 
     def _parse_header(self):

@@ -2,7 +2,7 @@
 @author: moloch
 
 This is a Burp plugin to parse Content-Security-Policy headers and detect
-possibly weaknesses and bypasses in the policy.
+weaknesses and possibly bypasses in the policy.
 """
 # pylint: disable=E0602,C0103,W0621,R0903,R0201
 
@@ -16,7 +16,9 @@ from burp import IBurpExtender, IScannerCheck
 
 class HttpDummySocket(object):
 
-    """ A dummy socket object so we can use httplib to parse the bytearray """
+    """
+    A dummy socket object so we can use httplib to parse the response bytearray
+    """
 
     def __init__(self, byteResponse):
         self._file = StringIO(byteResponse)
@@ -37,6 +39,19 @@ class ContentSecurityPolicyScan(IScannerCheck):
         variables as method args if you want access to them, fml.
         """
         self._helpers = callbacks.getHelpers()
+
+        # Checks must return a list of IScanIssue objects
+        self._checks = [
+            self.deprecatedHeaderCheck,
+            self.unsafeContentSourceCheck,
+            self.wildcardContentSourceCheck,
+            self.wildcardSubdomainContentSourceCheck,
+            self.insecureContentSourceCheck,
+            self.nonceSourceCheck,
+            self.missingDirectiveCheck,
+            self.weakDefaultSourceCheck,
+            self.knownBypassCheck,
+        ]
 
     def _getUrl(self, burpHttpReqResp):
         """
@@ -86,13 +101,8 @@ class ContentSecurityPolicyScan(IScannerCheck):
         """ Parses the CSP response header and searches for issues """
         csp = ContentSecurityPolicy(cspHeader[0], cspHeader[1])
         issues = []
-        issues.extend(self.deprecatedHeaderCheck(csp, burpHttpReqResp))
-        issues.extend(self.unsafeContentSourceCheck(csp, burpHttpReqResp))
-        issues.extend(self.wildcardContentSourceCheck(csp, burpHttpReqResp))
-        issues.extend(self.insecureContentSourceCheck(csp, burpHttpReqResp))
-        issues.extend(self.missingDirectiveCheck(csp, burpHttpReqResp))
-        issues.extend(self.weakDefaultSourceCheck(csp, burpHttpReqResp))
-        issues.extend(self.knownBypassCheck(csp, burpHttpReqResp))
+        for check in self._checks:
+            issues.extend(check(csp, burpHttpReqResp))
         return issues
 
     def deprecatedHeaderCheck(self, csp, burpHttpReqResp):
@@ -172,7 +182,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         issues = []
         for directive, sources in csp.iteritems():
             if sources is None:
-                continue  # Skip unspecified directives in NO_FALLBACK
+                continue
             if any(src.startswith("'nonce-") for src in sources):
                 nonceContent = NonceContentSource(
                     httpService=burpHttpReqResp.getHttpService(),
