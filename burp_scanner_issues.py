@@ -88,7 +88,8 @@ or ineffective content source directives.
         issue, or
         <code>null</code> if none applies.
         """
-        return """While non-trivial to implement, modern browser headers such
+        return """
+While non-trivial to implement, modern browser headers such
 as Content-Security-Policy (CSP) can provide extremely robust protection against
 XSS and related content injection issues. To fix weak policies enforce as much
 restriction on the content sources as possible, strive to disable unsafe, insecure,
@@ -252,6 +253,20 @@ class DeprecatedHeader(BaseCSPIssue):
 
     def getIssueDetail(self):
         return "The site uses a deprecated CSP header"
+
+    def getRemediationDetail(self):
+        return "Change the server response header to `Content-Security-Policy'"
+
+
+class ReportOnlyHeader(BaseCSPIssue):
+
+    """ Flags use of `Content-Security-Policy-Report-Only' """
+
+    def getIssueName(self):
+        return "Report Only Header"
+
+    def getIssueDetail(self):
+        return "The site uses a CSP in report-only mode"
 
     def getRemediationDetail(self):
         return "Change the server response header to `Content-Security-Policy'"

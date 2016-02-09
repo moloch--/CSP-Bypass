@@ -71,6 +71,7 @@ class ContentSecurityPolicy(object):
     """
 
     HEADERS = ["content-security-policy",
+               "content-security-policy-report-only",
                "x-content-security-policy",
                "x-webkit-csp"]
 
@@ -130,6 +131,9 @@ class ContentSecurityPolicy(object):
     def is_deprecated_header(self):
         """ Check for X-WebKit-CSP or X-Content-Security-Policy """
         return self.header_name.startswith('x')
+
+    def is_report_only_mode(self):
+        return self.header_name.endswith("report-only")
 
     def iteritems(self):
         """ Similar to a dictionary, iterates tuples of key/value pairs """

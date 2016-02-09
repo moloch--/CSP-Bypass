@@ -43,6 +43,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         # Checks must return a list of IScanIssue objects
         self._checks = [
             self.deprecatedHeaderCheck,
+            self.reportOnlyHeaderCheck,
             self.unsafeContentSourceCheck,
             self.wildcardContentSourceCheck,
             self.wildcardSubdomainContentSourceCheck,
@@ -118,6 +119,21 @@ class ContentSecurityPolicyScan(IScannerCheck):
                 severity="Medium",
                 confidence="Certain")
             issues.append(deprecatedHeader)
+        return issues
+
+    def reportOnlyHeaderCheck(self, csp, burpHttpReqResp):
+        """
+        Checks for the use of a report-only CSP header
+        """
+        issues = []
+        if csp.is_report_only():
+            reportOnly = ReportOnlyHeader(
+                httpService=burpHttpReqResp.getHttpService(),
+                url=self._getUrl(burpHttpReqResp),
+                httpMessages=burpHttpReqResp,
+                severity="High",
+                confidence="Certain")
+            issues.append(reportOnly)
         return issues
 
     def unsafeContentSourceCheck(self, csp, burpHttpReqResp):
@@ -287,8 +303,6 @@ class ContentSecurityPolicyScan(IScannerCheck):
                 if csp_match_domains(src, domain):
                     bypasses.append((domain, payload,))
         return bypasses
-
-
 
 
 class BurpExtender(IBurpExtender):
