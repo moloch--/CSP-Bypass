@@ -126,7 +126,7 @@ class ContentSecurityPolicyScan(IScannerCheck):
         Checks for the use of a report-only CSP header
         """
         issues = []
-        if csp.is_report_only():
+        if csp.is_report_only_mode():
             reportOnly = ReportOnlyHeader(
                 httpService=burpHttpReqResp.getHttpService(),
                 url=self._getUrl(burpHttpReqResp),
